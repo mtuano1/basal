@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ngân hàng đề – Tạo bài thi ngẫu nhiên</title>
+<style>
+:root{
+  --bg-base:#fff; --bg-card:#fff; --bg-header:#f0ede6;
+  --border-main:#e0ddd5; --border-choice:#ddd;
+  --text-primary:#1a1a1a; --text-secondary:#555; --text-choice:#2a2a2a; --text-circle:#555;
+  --btn-bg:#1a1a1a; --btn-fg:#fff;
+  --choice-hover-bg:#fafaf8; --choice-sel-bg:#eef6fc; --choice-sel-bd:#4a9eda;
+  --choice-ok-bg:#edf7f1; --choice-ok-bd:#10a95b; --choice-ok-fill:#10a95b;
+  --choice-err-bg:#fdf0f0; --choice-err-bd:#e34747; --choice-err-fill:#e34747;
+  --acc-text:#888; --acc-ok-text:#18794e; --acc-err-text:#c03535; --acc-border:#ddd;
+  --scrollbar:#ccc; --font-offset:0rem;
+}
+html.dark{
+  --bg-base:#36393f; --bg-card:#2f3136; --bg-header:#2a2d33;
+  --border-main:#4a4d54; --border-choice:#4a4d54;
+  --text-primary:#fff; --text-secondary:#b0b3b8; --text-choice:#e0e0e0; --text-circle:#b0b3b8;
+  --btn-bg:#fff; --btn-fg:#1a1a1a;
+  --choice-hover-bg:#3c3f45; --choice-sel-bg:#1e3a50; --choice-sel-bd:#58a6e7;
+  --choice-ok-bg:#083d2b; --choice-ok-bd:#17b26a; --choice-ok-fill:#17b26a;
+  --choice-err-bg:#4a1515; --choice-err-bd:#ef5350; --choice-err-fill:#ef5350;
+  --acc-text:#9fa3aa; --acc-ok-text:#66d19e; --acc-err-text:#ff8a8a; --acc-border:#4a4d54;
+  --scrollbar:#555860;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-base);color:var(--text-primary);
+  font-family:Calibri,-apple-system,Segoe UI,Arial,sans-serif}
+button{font-family:inherit}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 130px}
+#topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;
+  padding:10px 16px;background:var(--bg-base);border-bottom:2px dashed var(--border-main)}
+#topbar .title{font-weight:700;font-size:1rem}
+#topbar .spacer{flex:1}
+#timer{font-weight:700;font-variant-numeric:tabular-nums;font-size:1rem;padding:3px 10px;
+  border:1.5px solid var(--border-main);border-radius:6px}
+#timer.warn{color:var(--choice-err-bd);border-color:var(--choice-err-bd)}
+.tool-btn{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  min-width:34px;height:32px;padding:0 8px;border:1.5px solid var(--border-choice);border-radius:6px;
+  color:var(--text-secondary);cursor:pointer;font-weight:700;font-size:.9rem}
+.tool-btn:hover{color:var(--text-primary);border-color:var(--text-secondary);background:rgba(0,0,0,.05)}
+html.dark .tool-btn:hover{background:rgba(255,255,255,.08)}
+.panel{background:var(--bg-card);border:1px solid var(--border-main);border-radius:10px;padding:20px;margin-top:18px}
+.panel h2{margin:0 0 6px;font-size:1.12rem}
+.panel p.hint{margin:0 0 14px;color:var(--text-secondary);font-size:.9rem;line-height:1.5}
+.btn-primary{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 20px;border-radius:8px;background:var(--btn-bg);color:var(--btn-fg);cursor:pointer;font-weight:700;font-size:.95rem}
+.btn-primary:hover{opacity:.88}
+.btn-primary[disabled]{opacity:.4;cursor:not-allowed}
+.btn-ghost{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 16px;border:1.5px solid var(--border-choice);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-weight:700;font-size:.9rem}
+.btn-ghost:hover{color:var(--text-primary);border-color:var(--text-secondary)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+#drop{border:2px dashed var(--border-main);border-radius:10px;padding:22px;text-align:center;color:var(--text-secondary);
+  cursor:pointer;font-size:.92rem;transition:.15s}
+#drop.hover{border-color:var(--choice-sel-bd);background:var(--choice-sel-bg);color:var(--text-primary)}
+#drop b{color:var(--text-primary)}
+
+/* subject list */
+#subj-wrap{margin-top:16px;display:none}
+table.subj{width:100%;border-collapse:collapse;font-size:.92rem}
+table.subj th,table.subj td{padding:9px 8px;border-bottom:1px solid var(--border-main);text-align:left;vertical-align:middle}
+table.subj th{font-size:.78rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.03em}
+table.subj td.num{text-align:center;width:70px}
+.subj-name{border:none;background:transparent;color:var(--text-primary);font-weight:700;font-size:.95rem;width:100%;padding:4px 2px;border-bottom:1px dashed transparent}
+.subj-name:focus{outline:none;border-bottom:1px dashed var(--text-secondary)}
+.cnt-input{width:64px;padding:5px 6px;border:1.5px solid var(--border-choice);border-radius:6px;
+  background:var(--bg-base);color:var(--text-primary);text-align:center;font-weight:700}
+.mini-x{all:unset;cursor:pointer;color:var(--text-secondary);font-weight:700;padding:2px 8px;border-radius:5px}
+.mini-x:hover{color:var(--choice-err-bd);background:var(--choice-err-bg)}
+.opts{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:.9rem;color:var(--text-secondary)}
+.opts label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.opts input[type=number]{width:60px;padding:4px 6px;border:1.5px solid var(--border-choice);border-radius:6px;background:var(--bg-base);color:var(--text-primary)}
+#total-line{margin-top:14px;font-weight:700}
+.saved-banner{margin-top:14px;padding:10px 14px;border-radius:8px;background:var(--choice-ok-bg);color:var(--acc-ok-text);font-size:.9rem;font-weight:700}
+
+/* mapping */
+#map-area{margin-top:16px;display:none;border-top:1px dashed var(--border-main);padding-top:14px}
+.map-grid{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;align-items:center}
+.map-grid label{font-size:.86rem;font-weight:600}
+.map-grid select{padding:6px 8px;border:1.5px solid var(--border-choice);border-radius:6px;background:var(--bg-base);color:var(--text-primary);font-size:.84rem;max-width:100%}
+.map-note{margin:0 0 10px;font-size:.83rem;color:var(--text-secondary)}
+
+/* exam / question cards (shared engine) */
+.qcard{background:var(--bg-card);border:1px solid var(--border-main);border-radius:10px;padding:18px 20px;margin-top:16px}
+.qhead{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.q-num{min-width:46px;height:26px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;background:var(--btn-bg);color:var(--btn-fg);font-weight:700;font-size:.62rem;border-radius:4px}
+.q-type,.q-subj{display:inline-flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:.66rem;background:var(--bg-header);border:1px solid var(--border-main);padding:5px 10px;border-radius:4px}
+.q-flag{margin-left:auto;font-size:.75rem;color:var(--text-secondary);cursor:pointer;border:none;background:none}
+.q-flag.on{color:#e0a500;font-weight:700}
+.qtext{font-weight:700;font-size:calc(1.02rem + var(--font-offset));line-height:1.6;padding-bottom:10px;border-bottom:2px dashed var(--border-main)}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.choice{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border:1.5px solid var(--border-choice);border-radius:6px;background:var(--bg-card);cursor:pointer;transition:.15s}
+.choice:hover{border-color:#888;background:var(--choice-hover-bg)}
+.circle{width:24px;height:24px;min-width:24px;margin-top:1px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border-choice);border-radius:50%;color:var(--text-circle);font-weight:700;font-size:.82rem}
+.ctext{flex:1;min-width:0;color:var(--text-choice);font-size:calc(.96rem + var(--font-offset));line-height:1.55}
+.choice.sel{border-color:var(--choice-sel-bd);background:var(--choice-sel-bg);box-shadow:0 0 0 1px var(--choice-sel-bd)}
+.choice.sel .circle{background:var(--choice-sel-bd);border-color:var(--choice-sel-bd);color:#fff}
+.choice.correct{border-color:var(--choice-ok-bd);background:var(--choice-ok-bg);box-shadow:0 0 0 1px var(--choice-ok-bd)}
+.choice.correct .circle{background:var(--choice-ok-fill);border-color:var(--choice-ok-fill);color:#fff}
+.choice.incorrect{border-color:var(--choice-err-bd);background:var(--choice-err-bg);box-shadow:0 0 0 1px var(--choice-err-bd)}
+.choice.incorrect .circle{background:var(--choice-err-fill);border-color:var(--choice-err-fill);color:#fff}
+.choice.dim{opacity:.45}
+.choice.locked{cursor:default;pointer-events:none}
+.exp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--acc-border)}
+.exp .lab{font-size:calc(.73rem + var(--font-offset));font-weight:700;color:var(--acc-text);margin-bottom:3px}
+.exp .body{font-size:calc(.82rem + var(--font-offset));line-height:1.55;color:var(--text-secondary)}
+.exp.ok .lab,.exp.ok .body{color:var(--acc-ok-text)}
+.exp.no .lab,.exp.no .body{color:var(--acc-err-text)}
+.note-box{margin-top:14px;padding:12px 14px;border:1px dashed var(--border-main);border-radius:8px;background:rgba(0,0,0,.02)}
+html.dark .note-box{background:rgba(255,255,255,.03)}
+.note-box .lab{font-weight:700;font-size:.85rem;margin-bottom:5px}
+.note-box .body{font-size:.85rem;line-height:1.55;color:var(--text-secondary)}
+#exam-foot{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;align-items:center;gap:14px;justify-content:center;padding:12px;background:var(--bg-base);border-top:2px dashed var(--border-main)}
+#progress{font-size:.9rem;color:var(--text-secondary);font-weight:700}
+#result-head{background:var(--bg-card);border:1px solid var(--border-main);border-radius:10px;padding:22px;margin-top:18px;text-align:center}
+#score-ring{font-size:2.4rem;font-weight:800;margin:2px 0}
+#score-sub{color:var(--text-secondary);font-size:.95rem}
+.pill{display:inline-block;margin:8px 5px 0;padding:5px 12px;border-radius:20px;font-size:.85rem;font-weight:700}
+.pill.g{background:var(--choice-ok-bg);color:var(--acc-ok-text)}
+.pill.r{background:var(--choice-err-bg);color:var(--acc-err-text)}
+.pill.n{background:var(--bg-header);color:var(--text-secondary)}
+table.bysub{width:100%;border-collapse:collapse;margin-top:16px;font-size:.9rem}
+table.bysub th,table.bysub td{padding:8px;border-bottom:1px solid var(--border-main);text-align:left}
+table.bysub td.n{text-align:center}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:3px}
+.small{font-size:.82rem;color:var(--text-secondary)}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="title">🎲 Ngân hàng đề</span>
+  <span class="spacer"></span>
+  <span id="timer" class="hidden">00:00</span>
+  <button class="tool-btn" id="btn-font-dec" title="Giảm cỡ chữ">A-</button>
+  <button class="tool-btn" id="btn-font-inc" title="Tăng cỡ chữ">A+</button>
+  <button class="tool-btn" id="btn-dark" title="Sáng / Tối">◐</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== SETUP ===== -->
+  <section id="screen-setup">
+    <div class="panel">
+      <h2>1 · Nạp ngân hàng đề (mỗi môn 1 file)</h2>
+      <p class="hint">Kéo–thả hoặc bấm để chọn file. Mỗi file là một môn: <b>.txt</b> xuất từ Anki
+        (Notes in Plain Text) hoặc <b>.json</b> đã chuẩn hóa. Tên file thành tên môn (sửa được).
+        Đề chỉ nằm trên máy bạn, không gửi đi đâu.</p>
+      <div id="drop">📁 <b>Chọn / kéo-thả file môn vào đây</b><br><span class="small">.txt (Anki) hoặc .json — chọn nhiều file cùng lúc được</span></div>
+      <input type="file" id="file-input" multiple style="display:none">
+      <div class="row">
+        <button class="btn-ghost" id="btn-sample">Dùng đề mẫu (3 môn)</button>
+        <button class="btn-ghost" id="btn-clear-saved">Xóa dữ liệu đã lưu</button>
+      </div>
+      <div id="saved-banner" class="saved-banner hidden"></div>
+
+      <!-- shared mapping (for .txt) -->
+      <div id="map-area">
+        <h2 style="margin:6px 0">Gán cột cho file Anki (.txt)</h2>
+        <p class="map-note">Áp dụng chung cho <b>mọi file .txt</b> (giả định các môn cùng một mẫu thẻ).
+          Đã đoán sẵn — kiểm tra rồi bấm Áp dụng.</p>
+        <div class="map-grid" id="map-grid"></div>
+        <div class="row"><button class="btn-primary" id="btn-map-apply">Áp dụng cho tất cả file .txt →</button></div>
+      </div>
+    </div>
+
+    <div class="panel" id="subj-panel" style="display:none">
+      <h2>2 · Chọn số câu mỗi môn</h2>
+      <p class="hint">Nhập số câu muốn rút <b>ngẫu nhiên</b> ở mỗi môn (0 = bỏ qua môn đó).
+        Khi bật "Bỏ câu đã ra ở lần trước", app ưu tiên câu <b>chưa từng làm</b>; hết câu mới thì mới lấy lại câu cũ.</p>
+      <div id="used-line" class="small" style="margin-bottom:6px"></div>
+      <div id="subj-wrap">
+        <table class="subj">
+          <thead><tr><th>Môn</th><th class="num">Có sẵn</th><th class="num">Lấy</th><th></th></tr></thead>
+          <tbody id="subj-body"></tbody>
+        </table>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="opt-exclude-used" checked> Bỏ câu đã ra ở lần trước</label>
+        <label><input type="checkbox" id="opt-shuffle-choices" checked> Xáo trộn đáp án A–E</label>
+        <label><input type="checkbox" id="opt-shuffle-q" checked> Trộn thứ tự câu giữa các môn</label>
+        <label><input type="checkbox" id="opt-show-exp" checked> Hiện giải thích khi chấm</label>
+        <label><input type="checkbox" id="opt-remember"> Ghi nhớ đề trên thiết bị này</label>
+        <label>Giới hạn giờ (phút, 0 = không): <input type="number" id="opt-limit" value="0" min="0" step="1"></label>
+      </div>
+      <div id="total-line">Tổng số câu sẽ ra đề: <span id="total-count">0</span></div>
+      <div class="row">
+        <button class="btn-primary" id="btn-start">Tạo đề &amp; Bắt đầu →</button>
+        <button class="btn-ghost" id="btn-export">Tải bank .json về</button>
+        <button class="btn-ghost" id="btn-reset-used">Đặt lại tiến độ (coi như chưa làm câu nào)</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-exam" class="hidden"></section>
+
+  <section id="screen-result" class="hidden">
+    <div id="result-head">
+      <div id="score-ring">–</div>
+      <div id="score-sub"></div>
+      <div id="score-pills"></div>
+      <div id="bysub-area"></div>
+      <div class="row" style="justify-content:center">
+        <button class="btn-primary" id="btn-review">Xem lại &amp; giải thích ↓</button>
+        <button class="btn-ghost" id="btn-retake">Tạo đề mới (cùng cấu hình)</button>
+        <button class="btn-ghost" id="btn-back">Về ngân hàng đề</button>
+      </div>
+    </div>
+    <div id="result-list"></div>
+  </section>
+</div>
+
+<div id="exam-foot" class="hidden">
+  <span id="progress">Đã trả lời 0/0</span>
+  <button class="btn-primary" id="btn-submit">Nộp bài</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+  var LABELS=["A","B","C","D","E","F"];
+  var LS_FONT="mcq45_font_offset", LS_DARK="dethithu_dark";
+
+  /* theme + font */
+  var fontOffset=parseFloat(localStorage.getItem(LS_FONT))||0;
+  function applyFont(){document.documentElement.style.setProperty("--font-offset",fontOffset+"rem");}
+  $("#btn-font-inc").onclick=function(){fontOffset+=0.05;localStorage.setItem(LS_FONT,fontOffset);applyFont();};
+  $("#btn-font-dec").onclick=function(){fontOffset-=0.05;localStorage.setItem(LS_FONT,fontOffset);applyFont();};
+  applyFont();
+  if(localStorage.getItem(LS_DARK)==="1")document.documentElement.classList.add("dark");
+  $("#btn-dark").onclick=function(){document.documentElement.classList.toggle("dark");
+    localStorage.setItem(LS_DARK,document.documentElement.classList.contains("dark")?"1":"0");};
+
+  /* helpers */
+  function stripHtml(h){return (h||"").replace(/<br\s*\/?>/gi," ").replace(/&nbsp;/gi," ").replace(/<[^>]*>/g,"").replace(/\s+/g," ").trim();}
+  function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function splitLine(line,sep){
+    if(sep==="\t")return line.split("\t");
+    var out=[],cur="",inQ=false;
+    for(var i=0;i<line.length;i++){var c=line[i];
+      if(inQ){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=c;}
+      else{if(c==='"')inQ=true;else if(c===sep){out.push(cur);cur="";}else cur+=c;}}
+    out.push(cur);return out;}
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function pad(n){return n<10?"0"+n:""+n;}
+  function fmt(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;return (h>0?pad(h)+":":"")+pad(m)+":"+pad(x);}
+  function baseName(fn){return (fn||"Môn").replace(/\.[^.]+$/,"");}
+  /* stable content-based id so a question is recognized across sessions/reloads */
+  function hashQ(q){
+    var parts=(q.choices||[]).map(function(c){return c.orig+":"+stripHtml(c.text);}).sort().join("|");
+    var s=stripHtml(q.text)+"||"+parts;var h=5381;
+    for(var i=0;i<s.length;i++){h=(((h<<5)+h)+s.charCodeAt(i))>>>0;}
+    return "q"+h.toString(36);
+  }
+  function ensureId(q){if(q&&!q.id)q.id=hashQ(q);return q;}
+  /* used-question set persisted in localStorage (reliable even for local files) */
+  var LS_USED="dethi_used_v1";
+  function usedLoad(){try{return new Set(JSON.parse(localStorage.getItem(LS_USED)||"[]"));}catch(e){return new Set();}}
+  function usedSave(set){try{var arr=[];set.forEach(function(v){arr.push(v);});localStorage.setItem(LS_USED,JSON.stringify(arr));}catch(e){}}
+  var USED=usedLoad();
+
+  /* ------ parsing (Anki .txt) ------ */
+  function parseRaw(text){
+    var lines=text.split(/\r?\n/), sep="\t", rows=[];
+    var probe=lines.filter(function(l){return l.trim()&&l[0]!=="#";})[0]||"";
+    if(probe.indexOf("\t")===-1){if(probe.indexOf(";")>-1&&probe.indexOf(",")===-1)sep=";";else if(probe.indexOf(",")>-1)sep=",";}
+    for(var i=0;i<lines.length;i++){var l=lines[i];
+      if(!l.trim())continue;
+      if(l[0]==="#"){var m=l.match(/^#separator:(.+)/i);
+        if(m){var s=m[1].trim().toLowerCase();if(s==="tab"||s==="\\t")sep="\t";else if(s==="comma")sep=",";else if(s==="semicolon")sep=";";else if(s==="pipe")sep="|";else if(s.length===1)sep=s;}
+        continue;}
+      rows.push(splitLine(l,sep));}
+    return rows;
+  }
+  var FIELDS=[
+    {key:"num",label:"Số thứ tự",opt:true},{key:"type",label:"Loại câu hỏi",opt:true},
+    {key:"q",label:"Câu hỏi",opt:false},{key:"A",label:"Đáp án A",opt:false},{key:"B",label:"Đáp án B",opt:false},
+    {key:"C",label:"Đáp án C",opt:true},{key:"D",label:"Đáp án D",opt:true},{key:"E",label:"Đáp án E",opt:true},
+    {key:"correct",label:"Đáp án ĐÚNG",opt:false},
+    {key:"eA",label:"Giải thích A",opt:true},{key:"eB",label:"Giải thích B",opt:true},{key:"eC",label:"Giải thích C",opt:true},
+    {key:"eD",label:"Giải thích D",opt:true},{key:"eE",label:"Giải thích E",opt:true},{key:"note",label:"Ghi chú",opt:true}
+  ];
+  function guessMapping(rows,ncols){
+    var g={};FIELDS.forEach(function(f){g[f.key]=-1;});
+    var best=-1,bestScore=0;
+    for(var c=0;c<ncols;c++){var hit=0,tot=0;
+      for(var r=0;r<rows.length;r++){var v=stripHtml((rows[r][c]||""));if(!v)continue;tot++;if(/^[A-F]$/i.test(v))hit++;}
+      var sc=tot?hit/tot:0;if(sc>bestScore&&tot>0){bestScore=sc;best=c;}}
+    var order=["num","type","q","A","B","C","D","E","eA","eB","eC","eD","eE","correct","note"];
+    if(ncols>=14){for(var i=0;i<order.length&&i<ncols;i++)g[order[i]]=i;}
+    if(bestScore>=0.6&&best>-1)g.correct=best;
+    return g;
+  }
+  function buildQuestions(map,rows,subject){
+    var qs=[];
+    for(var r=0;r<rows.length;r++){var row=rows[r];
+      var get=function(k){var i=map[k];return (i>=0&&i<row.length)?row[i]:"";};
+      var qtext=get("q");if(!stripHtml(qtext))continue;
+      var choices=[];
+      ["A","B","C","D","E"].forEach(function(L){var t=get(L);if(stripHtml(t)==="")return;choices.push({orig:L,text:t,exp:get("e"+L)});});
+      if(choices.length<2)continue;
+      var correct=stripHtml(get("correct")).toUpperCase();
+      if(!/^[A-F]$/.test(correct)){var target=stripHtml(get("correct")).toLowerCase();
+        for(var i=0;i<choices.length;i++){if(stripHtml(choices[i].text).toLowerCase()===target){correct=choices[i].orig;break;}}}
+      qs.push({num:stripHtml(get("num"))||String(qs.length+1),type:stripHtml(get("type"))||"Câu hỏi",
+        text:qtext,choices:choices,correct:correct,note:get("note"),subject:subject});
+    }
+    return qs;
+  }
+  /* normalize a question object coming from JSON */
+  function normFromJSON(o,subject,idx){
+    if(o.choices&&o.correct){o.subject=o.subject||subject;o.num=o.num||String(idx+1);o.type=o.type||"Câu hỏi";o.note=o.note||"";return o;}
+    var choices=[];["A","B","C","D","E"].forEach(function(L){var t=o[L]!=null?o[L]:o["choice"+L];if(t!=null&&stripHtml(String(t))!=="")choices.push({orig:L,text:String(t),exp:String(o["e"+L]||o["explanation"+L]||o["exp"+L]||"")});});
+    var correct=String(o.correct||o.answer||o.CorrectAnswer||"").toUpperCase();
+    return {num:String(o.num||o.number||idx+1),type:String(o.type||"Câu hỏi"),text:String(o.q||o.question||o.Question||""),
+      choices:choices,correct:correct,note:String(o.note||o.knowledge||""),subject:subject};
+  }
+
+  /* ------ state ------ */
+  var SUBJECTS=[];           // [{name, questions:[...]}]
+  var MAPPING=null;          // confirmed shared mapping for .txt
+  var PENDING=[];            // [{name, rows}] awaiting mapping confirm
+  var EXAM=[], startTs=0, timerInt=null, limitSec=0, submitted=false;
+  var LAST_CONFIG=null;
+
+  /* ------ subject management + UI ------ */
+  function addSubject(name,questions){
+    if(!questions.length)return;
+    questions.forEach(ensureId);
+    // merge if same name exists
+    var ex=null;SUBJECTS.forEach(function(s){if(s.name===name)ex=s;});
+    if(ex)ex.questions=ex.questions.concat(questions);
+    else SUBJECTS.push({name:name,questions:questions});
+  }
+  function freshCountOf(s){var f=0;s.questions.forEach(function(q){if(!USED.has(q.id))f++;});return f;}
+  function renderSubjects(){
+    var body=$("#subj-body");body.innerHTML="";
+    SUBJECTS.forEach(function(s,i){
+      var tr=document.createElement("tr");
+      var total=s.questions.length, fresh=freshCountOf(s);
+      var def=Math.min(10,fresh>0?fresh:total);
+      var avail=total+(fresh<total?' <span class="small">(mới '+fresh+')</span>':'');
+      tr.innerHTML='<td><input class="subj-name" value="'+esc(s.name).replace(/"/g,"&quot;")+'" data-i="'+i+'"></td>'+
+        '<td class="num">'+avail+'</td>'+
+        '<td class="num"><input class="cnt-input" type="number" min="0" max="'+total+'" value="'+def+'" data-i="'+i+'"></td>'+
+        '<td class="num"><button class="mini-x" data-i="'+i+'" title="Xóa môn">✕</button></td>';
+      body.appendChild(tr);
+    });
+    $$(".subj-name",body).forEach(function(inp){inp.onchange=function(){SUBJECTS[+inp.dataset.i].name=inp.value.trim()||"Môn";};});
+    $$(".cnt-input",body).forEach(function(inp){inp.oninput=updateTotal;});
+    $$(".mini-x",body).forEach(function(b){b.onclick=function(){SUBJECTS.splice(+b.dataset.i,1);renderSubjects();afterBankChange();};});
+    $("#subj-panel").style.display=SUBJECTS.length?"block":"none";
+    $("#subj-wrap").style.display=SUBJECTS.length?"block":"none";
+    updateUsedLine();updateTotal();
+  }
+  function updateUsedLine(){var el=$("#used-line");if(!el)return;var n=USED.size;
+    el.innerHTML=n?('Đã làm ở các lần trước: <b>'+n+'</b> câu — sẽ được ưu tiên loại bỏ khi tạo đề mới.'):'Chưa có câu nào từng làm.';}
+  function getCounts(){var out=[];$$("#subj-body .cnt-input").forEach(function(inp){out.push(Math.max(0,Math.min(parseInt(inp.value,10)||0,SUBJECTS[+inp.dataset.i].questions.length)));});return out;}
+  function updateTotal(){var c=getCounts();var t=c.reduce(function(a,b){return a+b;},0);$("#total-count").textContent=t;$("#btn-start").disabled=(t===0);}
+  function afterBankChange(){ if($("#opt-remember")&&$("#opt-remember").checked)saveBank(); }
+
+  /* ------ mapping UI ------ */
+  function fillMapUI(rows,ncols){
+    var grid=$("#map-grid");grid.innerHTML="";
+    var guess=guessMapping(rows,ncols);
+    function prev(c){var v=rows[0]?stripHtml(rows[0][c]||""):"";return v.length>32?v.slice(0,32)+"…":v;}
+    FIELDS.forEach(function(f){
+      var lab=document.createElement("label");lab.textContent=f.label+(f.opt?"":" *");
+      var sel=document.createElement("select");sel.id="map-"+f.key;
+      var o0=document.createElement("option");o0.value="-1";o0.textContent="— (bỏ qua) —";sel.appendChild(o0);
+      for(var c=0;c<ncols;c++){var o=document.createElement("option");o.value=c;o.textContent="Cột "+(c+1)+" — "+prev(c);sel.appendChild(o);}
+      sel.value=String(guess[f.key]);grid.appendChild(lab);grid.appendChild(sel);});
+  }
+  function readMapping(){var m={};FIELDS.forEach(function(f){m[f.key]=parseInt($("#map-"+f.key).value,10);});return m;}
+
+  /* ------ file loading ------ */
+  function handleFiles(fileList){
+    var files=Array.prototype.slice.call(fileList);
+    var textFiles=[];
+    files.forEach(function(f){
+      var reader=new FileReader();
+      reader.onload=function(){
+        var name=baseName(f.name), content=reader.result;
+        if(/\.json$/i.test(f.name)){ addFromJSON(name,content); renderSubjects(); afterBankChange(); }
+        else{ // delimited
+          var rows=parseRaw(content);
+          if(!rows.length)return;
+          if(MAPPING){ addSubject(name,buildQuestions(MAPPING,rows,name)); renderSubjects(); afterBankChange(); }
+          else{ PENDING.push({name:name,rows:rows}); showMapForPending(); }
+        }
+      };
+      reader.readAsText(f,"utf-8");
+    });
+  }
+  function showMapForPending(){
+    if(!PENDING.length){return;}
+    var ncols=0;PENDING[0].rows.forEach(function(r){if(r.length>ncols)ncols=r.length;});
+    fillMapUI(PENDING[0].rows,ncols);
+    $("#map-area").style.display="block";
+  }
+  $("#btn-map-apply").onclick=function(){
+    MAPPING=readMapping();
+    if(MAPPING.q<0||MAPPING.A<0||MAPPING.B<0||MAPPING.correct<0){alert("Cần gán tối thiểu: Câu hỏi, Đáp án A, Đáp án B, Đáp án ĐÚNG.");return;}
+    PENDING.forEach(function(p){addSubject(p.name,buildQuestions(MAPPING,p.rows,p.name));});
+    PENDING=[];$("#map-area").style.display="none";
+    renderSubjects();afterBankChange();
+  };
+  function addFromJSON(name,content){
+    var data;try{data=JSON.parse(content);}catch(e){alert("File JSON lỗi: "+name);return;}
+    if(Array.isArray(data)){ // array of questions -> one subject
+      var qs=data.map(function(o,i){return normFromJSON(o,name,i);}).filter(function(q){return q.text&&q.choices.length>=2;});
+      addSubject(name,qs);
+    } else if(data&&Array.isArray(data.subjects)){ // combined bank
+      data.subjects.forEach(function(s){var qs=(s.questions||[]).map(function(o,i){return normFromJSON(o,s.name||name,i);}).filter(function(q){return q.text&&q.choices.length>=2;});addSubject(s.name||name,qs);});
+    } else if(data&&Array.isArray(data.questions)){
+      var qs2=data.questions.map(function(o,i){return normFromJSON(o,data.name||name,i);}).filter(function(q){return q.text&&q.choices.length>=2;});
+      addSubject(data.name||name,qs2);
+    }
+  }
+
+  /* drag & drop */
+  var drop=$("#drop"),fileInput=$("#file-input");
+  drop.onclick=function(){fileInput.click();};
+  fileInput.onchange=function(){handleFiles(fileInput.files);fileInput.value="";};
+  ["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("hover");});});
+  ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("hover");});});
+  drop.addEventListener("drop",function(e){if(e.dataTransfer&&e.dataTransfer.files)handleFiles(e.dataTransfer.files);});
+
+  /* ------ generate exam ------ */
+  function drawPicked(counts,excludeUsed){
+    var picked=[],topped=0;
+    SUBJECTS.forEach(function(s,i){var n=counts[i];if(n<=0)return;
+      if(excludeUsed){
+        var fresh=[],usedArr=[];
+        s.questions.forEach(function(q){(USED.has(q.id)?usedArr:fresh).push(q);});
+        shuffle(fresh);shuffle(usedArr);
+        var take=fresh.slice(0,n);
+        if(take.length<n){var need=n-take.length;var extra=usedArr.slice(0,need);topped+=extra.length;take=take.concat(extra);}
+        picked=picked.concat(take);
+      } else {var pool=s.questions.slice();shuffle(pool);picked=picked.concat(pool.slice(0,n));}
+    });
+    return {picked:picked,topped:topped};
+  }
+  function launch(picked,shufC,shufQ,topped){
+    if(shufQ)shuffle(picked);
+    EXAM=picked.map(function(q){var disp=q.choices.slice();if(shufC)shuffle(disp);return {q:q,disp:disp,sel:null,flag:false};});
+    submitted=false;renderExam();
+    if(topped>0){var host=$("#screen-exam");var b=document.createElement("div");b.className="saved-banner";
+      b.style.background="var(--choice-err-bg)";b.style.color="var(--acc-err-text)";
+      b.textContent="Lưu ý: một số môn đã hết câu mới nên có "+topped+" câu từng làm được dùng lại để đủ số lượng.";
+      host.insertBefore(b,host.firstChild);}
+    $("#screen-setup").classList.add("hidden");$("#screen-result").classList.add("hidden");
+    $("#screen-exam").classList.remove("hidden");$("#exam-foot").classList.remove("hidden");$("#timer").classList.remove("hidden");
+    window.scrollTo(0,0);startTimer();
+  }
+  function generate(){
+    var counts=getCounts();
+    var excludeUsed=$("#opt-exclude-used").checked;
+    var r=drawPicked(counts,excludeUsed);
+    if(!r.picked.length){alert("Hãy đặt số câu (>0) cho ít nhất một môn.");return;}
+    var shufC=$("#opt-shuffle-choices").checked, shufQ=$("#opt-shuffle-q").checked;
+    limitSec=Math.max(0,parseInt($("#opt-limit").value,10)||0)*60;
+    LAST_CONFIG={counts:counts.slice(),shufC:shufC,shufQ:shufQ,limitSec:limitSec,showExp:$("#opt-show-exp").checked,excludeUsed:excludeUsed};
+    launch(r.picked,shufC,shufQ,r.topped);
+  }
+  function regenerate(){ // new draw, same config (used-set now includes the exam just submitted)
+    if(!LAST_CONFIG){generate();return;}
+    var r=drawPicked(LAST_CONFIG.counts,LAST_CONFIG.excludeUsed);
+    if(!r.picked.length){alert("Không còn câu để tạo đề. Hãy chỉnh số câu hoặc đặt lại tiến độ.");return;}
+    limitSec=LAST_CONFIG.limitSec;
+    launch(r.picked,LAST_CONFIG.shufC,LAST_CONFIG.shufQ,r.topped);
+  }
+
+  /* ------ exam engine ------ */
+  function renderExam(){
+    var host=$("#screen-exam");host.innerHTML="";
+    EXAM.forEach(function(item,qi){
+      var card=document.createElement("div");card.className="qcard";
+      var head=document.createElement("div");head.className="qhead";
+      head.innerHTML='<span class="q-num">'+esc(String(qi+1))+'</span>'+
+        (item.q.subject?'<span class="q-subj">📚 '+esc(item.q.subject)+'</span>':'')+
+        '<span class="q-type">◧ '+esc(item.q.type)+'</span>';
+      var flag=document.createElement("button");flag.className="q-flag";flag.textContent="⚑ Đánh dấu";
+      flag.onclick=function(){item.flag=!item.flag;flag.classList.toggle("on",item.flag);};
+      head.appendChild(flag);card.appendChild(head);
+      var qt=document.createElement("div");qt.className="qtext";qt.innerHTML=item.q.text;card.appendChild(qt);
+      var ch=document.createElement("div");ch.className="choices";
+      item.disp.forEach(function(c,ci){var row=document.createElement("div");row.className="choice";row.dataset.qi=qi;row.dataset.ci=ci;
+        row.innerHTML='<div class="circle">'+LABELS[ci]+'</div><div class="ctext">'+c.text+'</div>';
+        row.onclick=function(){if(submitted)return;selectChoice(qi,ci);};ch.appendChild(row);});
+      card.appendChild(ch);host.appendChild(card);
+    });
+    updateProgress();
+  }
+  function selectChoice(qi,ci){var item=EXAM[qi];item.sel=(item.sel===ci)?null:ci;
+    $$('.choice[data-qi="'+qi+'"]',$("#screen-exam")).forEach(function(r){r.classList.toggle("sel",parseInt(r.dataset.ci,10)===item.sel);});
+    updateProgress();}
+  function updateProgress(){var n=EXAM.filter(function(i){return i.sel!==null;}).length;$("#progress").textContent="Đã trả lời "+n+"/"+EXAM.length;}
+  function startTimer(){startTs=Date.now();var t=$("#timer");if(timerInt)clearInterval(timerInt);
+    timerInt=setInterval(function(){var el=Math.floor((Date.now()-startTs)/1000);
+      if(limitSec>0){var left=limitSec-el;if(left<=0){t.textContent="00:00";stopTimer();doSubmit(true);return;}t.textContent=fmt(left);t.classList.toggle("warn",left<=60);}
+      else t.textContent=fmt(el);},250);}
+  function stopTimer(){if(timerInt){clearInterval(timerInt);timerInt=null;}}
+  function elapsed(){return Math.floor((Date.now()-startTs)/1000);}
+
+  function doSubmit(auto){
+    if(submitted)return;
+    var un=EXAM.filter(function(i){return i.sel===null;}).length;
+    if(!auto&&un>0){if(!confirm("Còn "+un+" câu chưa trả lời. Nộp bài luôn?"))return;}
+    submitted=true;stopTimer();var used=elapsed();var correct=0;
+    EXAM.forEach(function(item){var selOrig=item.sel!==null?item.disp[item.sel].orig:null;item.correctIdx=-1;
+      item.disp.forEach(function(c,ci){if(c.orig===item.q.correct)item.correctIdx=ci;});
+      item.isRight=(selOrig!==null&&selOrig===item.q.correct);if(item.isRight)correct++;});
+    // mark every question in this exam as "already done" so it is excluded next time
+    EXAM.forEach(function(item){if(item.q.id)USED.add(item.q.id);});
+    usedSave(USED);
+    renderResult(correct,used);
+  }
+  function renderResult(correct,used){
+    var total=EXAM.length,pct=total?Math.round(correct/total*100):0;
+    var wrong=EXAM.filter(function(i){return i.sel!==null&&!i.isRight;}).length;
+    var blank=EXAM.filter(function(i){return i.sel===null;}).length;
+    $("#score-ring").textContent=pct+"%";
+    $("#score-sub").textContent="Đúng "+correct+"/"+total+" câu · Thời gian "+fmt(used);
+    $("#score-pills").innerHTML='<span class="pill g">✔ Đúng '+correct+'</span><span class="pill r">✘ Sai '+wrong+'</span><span class="pill n">— Bỏ trống '+blank+'</span>';
+    // per-subject breakdown
+    var by={};EXAM.forEach(function(it){var s=it.q.subject||"(không rõ)";if(!by[s])by[s]={c:0,t:0};by[s].t++;if(it.isRight)by[s].c++;});
+    var keys=Object.keys(by);
+    if(keys.length>1){var h='<table class="bysub"><thead><tr><th>Môn</th><th class="n">Đúng</th><th class="n">Tổng</th><th class="n">%</th></tr></thead><tbody>';
+      keys.forEach(function(k){var o=by[k];h+='<tr><td>'+esc(k)+'</td><td class="n">'+o.c+'</td><td class="n">'+o.t+'</td><td class="n">'+Math.round(o.c/o.t*100)+'%</td></tr>';});
+      h+='</tbody></table>';$("#bysub-area").innerHTML=h;}
+    else $("#bysub-area").innerHTML="";
+    var showExp=LAST_CONFIG?LAST_CONFIG.showExp:$("#opt-show-exp").checked;
+    var list=$("#result-list");list.innerHTML="";
+    EXAM.forEach(function(item,qi){
+      var card=document.createElement("div");card.className="qcard";
+      var status=item.sel===null?'<span class="pill n">Bỏ trống</span>':(item.isRight?'<span class="pill g">✔ Đúng</span>':'<span class="pill r">✘ Sai</span>');
+      card.innerHTML='<div class="qhead"><span class="q-num">'+esc(String(qi+1))+'</span>'+
+        (item.q.subject?'<span class="q-subj">📚 '+esc(item.q.subject)+'</span>':'')+
+        '<span class="q-type">◧ '+esc(item.q.type)+'</span><span style="margin-left:auto">'+status+'</span></div>'+
+        '<div class="qtext">'+item.q.text+'</div>';
+      var ch=document.createElement("div");ch.className="choices";
+      item.disp.forEach(function(c,ci){var cls="choice locked";
+        if(ci===item.correctIdx)cls+=" correct";else if(item.sel===ci)cls+=" incorrect";else cls+=" dim";
+        var html='<div class="circle">'+LABELS[ci]+'</div><div class="ctext">'+c.text;
+        if(showExp&&stripHtml(c.exp)){var ok=(ci===item.correctIdx);
+          html+='<div class="exp '+(ok?"ok":"no")+'"><div class="lab">'+(ok?"Vì sao đúng":"Vì sao sai")+'</div><div class="body">'+c.exp+'</div></div>';}
+        html+='</div>';var row=document.createElement("div");row.className=cls;row.innerHTML=html;ch.appendChild(row);});
+      card.appendChild(ch);
+      if(stripHtml(item.q.note)){var nb=document.createElement("div");nb.className="note-box";
+        nb.innerHTML='<div class="lab">Ghi chú kiến thức</div><div class="body">'+item.q.note+'</div>';card.appendChild(nb);}
+      list.appendChild(card);
+    });
+    $("#screen-exam").classList.add("hidden");$("#exam-foot").classList.add("hidden");$("#screen-result").classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
+
+  /* ------ buttons ------ */
+  $("#btn-start").onclick=function(){generate();};
+  $("#btn-submit").onclick=function(){doSubmit(false);};
+  $("#btn-retake").onclick=function(){regenerate();};
+  $("#btn-review").onclick=function(){$("#result-list").scrollIntoView({behavior:"smooth"});};
+  $("#btn-back").onclick=function(){$("#screen-result").classList.add("hidden");$("#screen-exam").classList.add("hidden");
+    $("#exam-foot").classList.add("hidden");$("#timer").classList.add("hidden");$("#screen-setup").classList.remove("hidden");
+    renderSubjects();window.scrollTo(0,0);};
+  $("#btn-reset-used").onclick=function(){if(!confirm("Đặt lại tiến độ? Toàn bộ câu sẽ được coi như CHƯA làm."))return;USED=new Set();usedSave(USED);renderSubjects();};
+  $("#btn-export").onclick=function(){
+    var bank={subjects:SUBJECTS.map(function(s){return {name:s.name,questions:s.questions};})};
+    var blob=new Blob([JSON.stringify(bank,null,1)],{type:"application/json"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ngan-hang-de.json";a.click();
+  };
+  $("#opt-remember").onchange=function(){if(this.checked)saveBank();};
+
+  /* ------ persistence (IndexedDB, optional) ------ */
+  function idb(){return new Promise(function(res,rej){if(!window.indexedDB){rej("no-idb");return;}
+    var r=indexedDB.open("dethi_bank_db",1);r.onupgradeneeded=function(){r.result.createObjectStore("kv");};
+    r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};});}
+  function idbSet(k,v){return idb().then(function(db){return new Promise(function(res,rej){var tx=db.transaction("kv","readwrite");tx.objectStore("kv").put(v,k);tx.oncomplete=function(){res();};tx.onerror=function(){rej(tx.error);};});});}
+  function idbGet(k){return idb().then(function(db){return new Promise(function(res,rej){var tx=db.transaction("kv","readonly");var rq=tx.objectStore("kv").get(k);rq.onsuccess=function(){res(rq.result);};rq.onerror=function(){rej(rq.error);};});});}
+  function idbDel(k){return idb().then(function(db){return new Promise(function(res){var tx=db.transaction("kv","readwrite");tx.objectStore("kv").delete(k);tx.oncomplete=function(){res();};});});}
+  var LS_BANK="dethi_bank_ls";
+  function saveBank(){var payload={subjects:SUBJECTS};
+    function toLS(){try{localStorage.setItem(LS_BANK,JSON.stringify(payload));}catch(e){}}
+    try{idbSet("bank",payload).catch(toLS);}catch(e){toLS();}}
+  function applyBank(v){SUBJECTS=v.subjects;SUBJECTS.forEach(function(s){(s.questions||[]).forEach(ensureId);});renderSubjects();
+    $("#opt-remember").checked=true;$("#saved-banner").textContent="Đã nạp "+SUBJECTS.length+" môn đã lưu trên thiết bị này.";$("#saved-banner").classList.remove("hidden");}
+  $("#btn-clear-saved").onclick=function(){try{localStorage.removeItem(LS_BANK);}catch(e){}
+    try{idbDel("bank").then(function(){$("#saved-banner").classList.add("hidden");alert("Đã xóa đề đã lưu trên thiết bị.");}).catch(function(){$("#saved-banner").classList.add("hidden");});}catch(e){$("#saved-banner").classList.add("hidden");}};
+  function restoreBank(){
+    function fromLS(){try{var raw=localStorage.getItem(LS_BANK);if(raw){var v=JSON.parse(raw);if(v&&v.subjects&&v.subjects.length)applyBank(v);}}catch(e){}}
+    try{idbGet("bank").then(function(v){if(v&&v.subjects&&v.subjects.length)applyBank(v);else fromLS();}).catch(fromLS);}catch(e){fromLS();}
+  }
+
+  /* ------ sample ------ */
+  $("#btn-sample").onclick=function(){SAMPLE.forEach(function(s){addSubject(s.name,s.questions.map(function(q){q.subject=s.name;return q;}));});renderSubjects();afterBankChange();$("#subj-panel").scrollIntoView({behavior:"smooth"});};
+
+  function mk(num,text,correct,note,ch){return {num:String(num),type:"Chọn 1 đáp án đúng",text:text,correct:correct,note:note||"",choices:ch};}
+  var SAMPLE=[
+    {name:"Dược lý",questions:[
+      mk(1,"Cơ chế tác dụng chính của nhóm <b>beta-lactam</b>?","A","Beta-lactam gắn PBP, ức chế tổng hợp peptidoglycan của vách vi khuẩn.",[
+        {orig:"A",text:"Ức chế tổng hợp vách tế bào vi khuẩn",exp:"Đúng — gắn PBP, chặn tổng hợp peptidoglycan."},
+        {orig:"B",text:"Ức chế tiểu đơn vị 30S ribosome",exp:"Aminoglycosid, tetracyclin."},
+        {orig:"C",text:"Ức chế tiểu đơn vị 50S ribosome",exp:"Macrolid, clindamycin."},
+        {orig:"D",text:"Ức chế DNA gyrase",exp:"Fluoroquinolon."},
+        {orig:"E",text:"Ức chế tổng hợp acid folic",exp:"Sulfonamid."}]),
+      mk(2,"Thuốc nào là <b>ức chế bơm proton (PPI)</b>?","A","PPI ức chế H+/K+-ATPase ở tế bào viền.",[
+        {orig:"A",text:"Omeprazol",exp:"Đúng — nhóm PPI."},
+        {orig:"B",text:"Ranitidin",exp:"Kháng thụ thể H2."},
+        {orig:"C",text:"Sucralfat",exp:"Bảo vệ niêm mạc."},
+        {orig:"D",text:"Misoprostol",exp:"Analog prostaglandin."},
+        {orig:"E",text:"Nhôm hydroxyd",exp:"Antacid trung hòa acid."}]),
+      mk(3,"Kháng sinh nào chống chỉ định ở trẻ <8 tuổi do ảnh hưởng răng/xương?","A","Tetracyclin gắn calci, gây đổi màu răng.",[
+        {orig:"A",text:"Tetracyclin",exp:"Đúng — chống chỉ định ở trẻ nhỏ và thai."},
+        {orig:"B",text:"Amoxicillin",exp:"An toàn cho trẻ."},
+        {orig:"C",text:"Cephalexin",exp:"An toàn cho trẻ."},
+        {orig:"D",text:"Azithromycin",exp:"Dùng được cho trẻ."},
+        {orig:"E",text:"Penicillin V",exp:"An toàn cho trẻ."}])
+    ]},
+    {name:"Nội khoa",questions:[
+      mk(1,"ĐTĐ type 2 + THA + <b>albumin niệu</b>. Nhóm hạ áp ưu tiên?","A","ACEI/ARB bảo vệ thận, giảm albumin niệu.",[
+        {orig:"A",text:"Ức chế men chuyển (ACEI)",exp:"Đúng — bảo vệ thận."},
+        {orig:"B",text:"Chẹn beta",exp:"Không ưu tiên cho bảo vệ thận."},
+        {orig:"C",text:"Lợi tiểu thiazide liều cao",exp:"Ảnh hưởng chuyển hóa đường."},
+        {orig:"D",text:"Chẹn alpha",exp:"Chỉ phối hợp."},
+        {orig:"E",text:"Hydralazin",exp:"Giãn mạch trực tiếp, không đầu tay."}]),
+      mk(2,"Thuốc <b>cắt cơn</b> hen phế quản cấp?","A","SABA khí dung giãn phế quản nhanh.",[
+        {orig:"A",text:"Salbutamol khí dung",exp:"Đúng — SABA cắt cơn."},
+        {orig:"B",text:"Salmeterol",exp:"LABA — kiểm soát, không cắt cơn."},
+        {orig:"C",text:"Corticoid uống",exp:"Chống viêm, không cắt cơn tức thì."},
+        {orig:"D",text:"Theophyllin",exp:"Không phải đầu tay cắt cơn."},
+        {orig:"E",text:"Cromolyn",exp:"Dự phòng."}]),
+      mk(3,"Rung nhĩ nguy cơ đột quỵ cao, dự phòng bằng?","A","Chống đông (kháng vit K hoặc DOAC) theo CHA2DS2-VASc.",[
+        {orig:"A",text:"Thuốc chống đông (VKA/DOAC)",exp:"Đúng — dự phòng huyết khối."},
+        {orig:"B",text:"Aspirin đơn thuần",exp:"Hiệu quả kém hơn chống đông."},
+        {orig:"C",text:"Statin",exp:"Không dự phòng huyết khối do rung nhĩ."},
+        {orig:"D",text:"Chẹn beta đơn thuần",exp:"Kiểm soát nhịp, không chống đông."},
+        {orig:"E",text:"Lợi tiểu",exp:"Không liên quan dự phòng đột quỵ."}])
+    ]},
+    {name:"Ngoại khoa",questions:[
+      mk(1,"Nam 25t, đau hố chậu phải, McBurney (+), phản ứng dội (+). Nghĩ nhiều nhất?","A","Bệnh cảnh điển hình viêm ruột thừa cấp.",[
+        {orig:"A",text:"Viêm ruột thừa cấp",exp:"Đúng — đau khu trú HCP, McBurney (+)."},
+        {orig:"B",text:"Viêm túi mật cấp",exp:"Đau HSP, Murphy (+)."},
+        {orig:"C",text:"Cơn đau quặn thận",exp:"Đau hông lan bẹn, tiểu máu."},
+        {orig:"D",text:"Thủng ổ loét dạ dày",exp:"Bụng gỗ, liềm hơi dưới hoành."},
+        {orig:"E",text:"Viêm tụy cấp",exp:"Đau thượng vị lan lưng, amylase tăng."}]),
+      mk(2,"Tam chứng <b>tắc ruột cơ học</b> điển hình?","A","Đau cơn + nôn + bí trung đại tiện.",[
+        {orig:"A",text:"Đau bụng cơn, nôn, bí trung đại tiện",exp:"Đúng — tam chứng tắc ruột."},
+        {orig:"B",text:"Sốt cao rét run",exp:"Gợi ý nhiễm khuẩn."},
+        {orig:"C",text:"Vàng da, tiểu sẫm",exp:"Bệnh lý gan mật."},
+        {orig:"D",text:"Tiêu chảy kéo dài",exp:"Ngược với bí đại tiện."},
+        {orig:"E",text:"Đau ngực khó thở",exp:"Bệnh lý tim/phổi."}]),
+      mk(3,"Dấu hiệu <b>thủng tạng rỗng</b> trên X-quang bụng đứng?","A","Liềm hơi tự do dưới hoành.",[
+        {orig:"A",text:"Liềm hơi dưới hoành",exp:"Đúng — hơi tự do ổ bụng."},
+        {orig:"B",text:"Mức nước-hơi bậc thang",exp:"Gợi ý tắc ruột."},
+        {orig:"C",text:"Quai ruột giãn đơn độc",exp:"Không đặc hiệu thủng."},
+        {orig:"D",text:"Vôi hóa tụy",exp:"Viêm tụy mạn."},
+        {orig:"E",text:"Bóng hơi dạ dày lớn",exp:"Không phải dấu hiệu thủng."}])
+    ]}
+  ];
+
+  /* ------ test hook (harmless in production) ------ */
+  window.__BANK={
+    addTSV:function(name,text){var rows=parseRaw(text);var ncols=0;rows.forEach(function(r){if(r.length>ncols)ncols=r.length;});
+      var map=guessMapping(rows,ncols);addSubject(name,buildQuestions(map,rows,name));renderSubjects();return true;},
+    addJSON:function(name,str){addFromJSON(name,str);renderSubjects();return true;},
+    loadSample:function(){$("#btn-sample").onclick();},
+    setCount:function(i,n){var inp=$$("#subj-body .cnt-input")[i];if(inp){inp.value=n;updateTotal();}},
+    generate:function(){generate();},
+    subjects:function(){return SUBJECTS.map(function(s){return {name:s.name,total:s.questions.length};});},
+    examInfo:function(){var by={};EXAM.forEach(function(it){by[it.q.subject]=(by[it.q.subject]||0)+1;});return {len:EXAM.length,bySubject:by,ids:EXAM.map(function(it){return it.q.id;})};},
+    pickCorrect:function(){ // choose the correct choice on every question (for grading test)
+      EXAM.forEach(function(it,qi){var ci=-1;it.disp.forEach(function(c,k){if(c.orig===it.q.correct)ci=k;});if(ci>=0)selectChoice(qi,ci);});},
+    submit:function(){doSubmit(true);},
+    regenerate:function(){regenerate();},
+    setExclude:function(b){$("#opt-exclude-used").checked=!!b;},
+    usedCount:function(){return USED.size;},
+    resetUsed:function(){USED=new Set();usedSave(USED);renderSubjects();},
+    freshCount:function(i){return freshCountOf(SUBJECTS[i]);}
+  };
+
+  restoreBank();
+})();
+</script>
+</body>
+</html>
